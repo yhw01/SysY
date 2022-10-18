@@ -1,87 +1,70 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #ifndef YYSTYPE
-#define YYSTYPE char*//由于需要返回的是一个后缀表达式，是一个字符串，因此 YYSTYPE可声明为 char*,
+#define YYSTYPE char*
 #endif
-
-char numStr[50];//定义的可以保存NUMBER的字符串
-char idStr[50];//定义的可以保存ID的字符串
+char idStr[50];
+char numStr[50];
 int yylex();
 extern int yyparse();
 FILE* yyin;
-void yyerror(const char*s);
+void yyerror(const char* s);
 %}
 
-%token ADD
-%token SUB
-%token MUL
+%token id
+%token add
+%token sub
+%token mul
 %token DIV
-%token UMINUS
-%token LEFT
-%token RIGHT
+%token l_bracket
+%token r_barcket
 %token NUMBER
-%token ID
-
-%left ADD SUB
-%left MUL DIV
+%left add sub
+%left mul DIV
 %right UMINUS
 
 %%
-// 规则段部分为进行语法分析的部分，包括上下文无关文法及翻译模式，大括号内的部分即为语义动作。
-// $$ 代表产生式左部的属性值，$n 为产生式右部第 n 个 token 的属性值，
 lines   :   lines expr ';' {printf("%s\n", $2);}
         |   lines ';'
-        |
+	|
         ;
 
-expr    :   expr ADD expr           {//由原来的计算变为字符串的拼接
-                                    $$ = (char*) malloc (50*sizeof(char));
-                                    strcpy($$, $1);//strcpy($$,$1)也等价于 strcpy($$,yylval)
-                                    strcat($$, $3);//语法分析部分需要将计算值修改成字符串的拷贝和连接。
-                                    strcat($$, "+ ");//转为后缀表达式
-                                    }
-        |   expr SUB expr           {
-                                    $$ = (char*) malloc (50*sizeof(char));
-                                    strcpy($$, $1);
-                                    strcat($$, $3);
-                                    strcat($$, "- ");
-                                    }
-        |   expr MUL expr           {
-                                    $$ = (char*) malloc (50*sizeof(char));
-                                    strcpy($$, $1);
-                                    strcat($$, $3);
-                                    strcat($$, "* ");
-                                    }
-        |   expr DIV expr           {
-                                    $$ = (char*) malloc (50*sizeof(char));
-                                    strcpy($$, $1);
-                                    strcat($$, $3);
-                                    strcat($$, "/ ");
-                                    }
-        |   LEFT expr RIGHT         {
-                                    $$ = (char*) malloc (50*sizeof(char));
+expr    :   expr add expr {$$ = (char*)malloc(50 * sizeof(char));
+                            strcpy($$, $1);
+                            strcat($$, $3);
+                            strcat($$, "+ ");
+                          }
+        |   expr sub expr {$$ = (char*)malloc(50 * sizeof(char));
+                            strcpy($$, $1);
+                            strcat($$, $3);
+                            strcat($$, "- ");
+                          }
+        |   expr mul expr{$$ = (char*)malloc(50 * sizeof(char));
+                            strcpy($$, $1);
+                            strcat($$, $3);
+                            strcat($$, "* ");
+                          }
+        |   l_bracket expr r_barcket  {$$ = $2;}
+        |   expr DIV expr{$$ = (char*)malloc(50 * sizeof(char));
+                            strcpy($$, $1);
+                            strcat($$, $3);
+                            strcat($$, "/ ");
+                          }
+        |   sub expr %prec UMINUS{$$ = (char*)malloc(50 * sizeof(char));
                                     strcpy($$, $2);
-                                    strcat($$, " ");
-                                    }
-        |   SUB expr %prec UMINUS   {
-                                    $$ = (char*) malloc (50*sizeof(char));
-                                    strcpy($$, "0");
-                                    strcat($$, $2);
-                                    strcat($$, '-');
-                                    }
-        |   NUMBER                  {
-                                    $$ = (char*) malloc (50*sizeof(char));
-                                    strcpy($$, $1);
-                                    strcat($$, " ");
-                                    }
-        |   ID                      {
-                                    $$ = (char*) malloc (50*sizeof(char));
-                                    strcpy($$, $1);
-                                    strcat($$, " ");
-                                    }
+                                    strcat($$, "- ");
+                                 }
+        |   NUMBER {$$ = (char*)malloc(50 * sizeof(char));
+                    strcpy($$, $1);
+                    strcat($$, " ");
+                    }
+        |   id {$$ = (char*)malloc(50 * sizeof(char));
+                strcpy($$, $1);
+                strcat($$, " ");
+                }
         ;
-
 %%
 
 int yylex()//实现词法分析功能
